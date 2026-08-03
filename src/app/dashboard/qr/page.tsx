@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import QRCode from "qrcode";
-import { getCurrentUser, getRestaurantForUser } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
 import { signOut } from "@/lib/actions/restaurant";
+import { QrDownloadCard } from "@/app/dashboard/qr/qr-download-card";
 
 export const dynamic = "force-dynamic";
 
@@ -11,17 +13,25 @@ export default async function DashboardQrPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const restaurant = await getRestaurantForUser(user.id);
+  const supabase = await createClient();
+  const { data: restaurant } = await supabase
+    .from("restaurants")
+    .select("id, slug, name, logo_url")
+    .eq("owner_user_id", user.id)
+    .single();
+
   if (!restaurant) redirect("/onboarding");
 
   const siteUrl = await getSiteUrl();
   const menuUrl = `${siteUrl}/r/${restaurant.slug}`;
 
-  const qrDataUrl = await QRCode.toDataURL(menuUrl, {
+  const qrOptions = {
     width: 512,
     margin: 2,
-    errorCorrectionLevel: "M",
-  });
+    errorCorrectionLevel: "M" as const,
+  };
+  const qrDataUrl = await QRCode.toDataURL(menuUrl, qrOptions);
+  const qrSvg = await QRCode.toString(menuUrl, { ...qrOptions, type: "svg" });
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
@@ -62,21 +72,23 @@ export default async function DashboardQrPage() {
         <p className="text-sm text-zinc-600">
           Points to <span className="font-medium text-zinc-900">{menuUrl}</span>
         </p>
-        <div className="flex flex-col items-center gap-2 sm:flex-row">
-          <a
-            href={qrDataUrl}
-            download={`${restaurant.slug}-qr.png`}
-            className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-700"
-          >
-            Download QR code
-          </a>
-          <Link
-            href={menuUrl}
-            className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium hover:bg-zinc-50"
-          >
-            Open public menu
-          </Link>
-        </div>
+        {restaurant.logo_url && (
+          <p className="text-sm text-zinc-500">
+            Your logo is baked into every download.
+          </p>
+        )}
+        <QrDownloadCard
+          qrPng={qrDataUrl}
+          qrSvg={qrSvg}
+          logoUrl={restaurant.logo_url}
+          slug={restaurant.slug}
+        />
+        <Link
+          href={menuUrl}
+          className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium hover:bg-zinc-50"
+        >
+          Open public menu
+        </Link>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-# AR Restaurant Menu
+# DishAR
 
 A multi-tenant web app where restaurants upload 3D-scanned dish models and customers scan a table QR code to view any dish in true-to-scale AR — right in their phone browser, no app install required.
 

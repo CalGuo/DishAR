@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -10,6 +10,7 @@ import {
   extensionForFileName,
 } from "@/lib/storage";
 import { createDish, updateDish } from "@/lib/actions/dish";
+import { ARViewer } from "@/components/ar-viewer";
 
 export const DIETARY_TAGS = [
   "Vegetarian",
@@ -73,11 +74,54 @@ async function uploadFile(
   return { url: data.publicUrl };
 }
 
+function dataUrlToFile(dataUrl: string, fileName: string): File {
+  const comma = dataUrl.indexOf(",");
+  const meta = dataUrl.slice(0, comma);
+  const body = dataUrl.slice(comma + 1);
+  const mime = /data:(.*?)(;|$)/.exec(meta)?.[1] ?? "image/png";
+  const binary = atob(body);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new File([bytes], fileName, { type: mime });
+}
+
+function formatModelSize(
+  dims: { x: number; y: number; z: number } | null
+): string | null {
+  if (!dims) return null;
+  const sorted = [dims.x, dims.y, dims.z].sort((a, b) => b - a);
+  return `≈ ${Math.max(1, Math.round(sorted[0] * 100))} × ${Math.max(1, Math.round(sorted[1] * 100))} cm`;
+}
+
 export function DishForm({ restaurantId, initial, onDone }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [modelDims, setModelDims] = useState<{
+    x: number;
+    y: number;
+    z: number;
+  } | null>(null);
+  const [autoThumb, setAutoThumb] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  function handleGlbChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      if (!file) return null;
+      return URL.createObjectURL(file);
+    });
+    setModelDims(null);
+    setAutoThumb(null);
+  }
 
   function toggleTag(tag: string) {
     setTags((prev) =>
@@ -115,6 +159,15 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
       let thumbnail_url = initial?.thumbnail_url ?? null;
       if (thumbnail && thumbnail.size > 0) {
         const res = await uploadFile(restaurantId, "images", thumbnail);
+        if (res.error) throw { message: res.error };
+        thumbnail_url = res.url!;
+      } else if (autoThumb) {
+        // No photo supplied — auto-generate one from the selected GLB render.
+        const res = await uploadFile(
+          restaurantId,
+          "images",
+          dataUrlToFile(autoThumb, `auto-thumb-${Date.now()}.png`)
+        );
         if (res.error) throw { message: res.error };
         thumbnail_url = res.url!;
       }
@@ -263,6 +316,7 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
           name="model_glb"
           type="file"
           accept=".glb,model/gltf-binary"
+          onChange={handleGlbChange}
           className="w-full text-sm"
         />
         {initial?.model_glb_url && (
@@ -271,6 +325,38 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
           </p>
         )}
       </div>
+      {previewUrl && (
+        <div className="md:col-span-2">
+          <span className="mb-1 block text-sm font-medium">
+            Model preview
+          </span>
+          <div className="h-56 w-full overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+            <ARViewer
+              src={previewUrl}
+              alt="New model preview"
+              onModelLoaded={({ el, dimensions }) => {
+                setModelDims(dimensions);
+                const render = el.toDataURL() as string | Promise<string>;
+                if (typeof render === "string") {
+                  setAutoThumb(render);
+                } else {
+                  render.then(setAutoThumb).catch(() => setAutoThumb(null));
+                }
+              }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-zinc-500">
+            {modelDims
+              ? `Real-world size: ${formatModelSize(modelDims)}. Check this looks right before publishing.`
+              : "Loading… a thumbnail will be generated from this model automatically."}
+            {autoThumb && (
+              <span className="block">
+                A thumbnail is ready and will be used unless you upload one.
+              </span>
+            )}
+          </p>
+        </div>
+      )}
       <div>
         <label htmlFor="model_usdz" className="mb-1 block text-sm font-medium">
           iOS model (USDZ){" "}

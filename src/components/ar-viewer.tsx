@@ -20,6 +20,15 @@ export type ARViewerProps = {
   iosSrc?: string | null;
   alt?: string;
   className?: string;
+  /**
+   * Fires once the model finishes loading. `dimensions` (meters) may be null
+   * for malformed GLBs. `el` is the underlying viewer element — e.g. for
+   * `el.toDataURL()` to grab a thumbnail.
+   */
+  onModelLoaded?: (info: {
+    el: ModelViewerElement;
+    dimensions: { x: number; y: number; z: number } | null;
+  }) => void;
 };
 
 type LoadStatus = "loading" | "loaded" | "error";
@@ -38,7 +47,13 @@ function formatSize(dims: { x: number; y: number; z: number }): string {
   return `≈ ${largest} × ${second} cm`;
 }
 
-export function ARViewer({ src, iosSrc, alt, className }: ARViewerProps) {
+export function ARViewer({
+  src,
+  iosSrc,
+  alt,
+  className,
+  onModelLoaded,
+}: ARViewerProps) {
   const ref = useRef<ModelViewerElement>(null);
   const [libReady, setLibReady] = useState(false);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("loading");
@@ -91,15 +106,18 @@ export function ARViewer({ src, iosSrc, alt, className }: ARViewerProps) {
 
     const onLoad = () => {
       setLoadStatus("loaded");
+      let dims: { x: number; y: number; z: number } | null = null;
       try {
-        const dims = el.getDimensions();
-        if (dims && typeof dims.x === "number") {
-          setDimensions({ x: dims.x, y: dims.y, z: dims.z });
+        const d = el.getDimensions();
+        if (d && typeof d.x === "number") {
+          dims = { x: d.x, y: d.y, z: d.z };
         }
       } catch {
         // Older/malformed GLBs may not expose dimensions; skip the chip.
       }
+      if (dims) setDimensions(dims);
       setArSupported(el.canActivateAR ?? false);
+      onModelLoaded?.({ el, dimensions: dims });
     };
     const onError = () => setLoadStatus("error");
     el.addEventListener("load", onLoad);
@@ -115,7 +133,7 @@ export function ARViewer({ src, iosSrc, alt, className }: ARViewerProps) {
       el.removeEventListener("error", onError);
       observer.disconnect();
     };
-  }, [libReady, src, iosSrc, alt, retryKey]);
+  }, [libReady, src, iosSrc, alt, retryKey, onModelLoaded]);
 
   function handleRetry() {
     const el = ref.current;

@@ -20,6 +20,7 @@ type DishFields = {
   thumbnail_url: string | null;
   model_glb_url: string;
   model_usdz_url: string | null;
+  tags: string[];
 };
 
 async function resolveRestaurantId(userId: string): Promise<string | null> {
@@ -85,6 +86,7 @@ export async function createDish(
       thumbnail_url: fields.thumbnail_url || null,
       model_glb_url: fields.model_glb_url,
       model_usdz_url: fields.model_usdz_url || null,
+      tags: fields.tags ?? [],
       is_available: true,
       sort_order: (maxRow?.sort_order ?? -1) + 1,
     })
@@ -120,6 +122,7 @@ export async function updateDish(
       thumbnail_url: fields.thumbnail_url || null,
       model_glb_url: fields.model_glb_url,
       model_usdz_url: fields.model_usdz_url || null,
+      tags: fields.tags ?? [],
     })
     .eq("id", dishId)
     .eq("restaurant_id", owned.restaurantId);
@@ -187,6 +190,58 @@ export async function setDishAvailability(
     .update({ is_available: isAvailable })
     .eq("id", dishId)
     .eq("restaurant_id", owned.restaurantId);
+
+  if (error) return { error: error.message };
+  revalidatePath("/dashboard");
+  return null;
+}
+
+export async function cloneDish(
+  dishId: string
+): Promise<{ error?: string } | null> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "You must be signed in." };
+
+  const owned = await assertOwnsDish(user.id, dishId);
+  if ("error" in owned) return owned;
+
+  const supabase = await createClient();
+
+  const { data: source } = await supabase
+    .from("dishes")
+    .select(
+      "name, description, price, category, thumbnail_url, model_glb_url, model_usdz_url, tags"
+    )
+    .eq("id", dishId)
+    .eq("restaurant_id", owned.restaurantId)
+    .maybeSingle();
+  if (!source) return { error: "Dish not found." };
+
+  const { data: maxRow } = await supabase
+    .from("dishes")
+    .select("sort_order")
+    .eq("restaurant_id", owned.restaurantId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("dishes")
+    .insert({
+      restaurant_id: owned.restaurantId,
+      name: `${source.name} (copy)`,
+      description: source.description,
+      price: source.price,
+      category: source.category,
+      thumbnail_url: source.thumbnail_url,
+      model_glb_url: source.model_glb_url,
+      model_usdz_url: source.model_usdz_url,
+      tags: source.tags ?? [],
+      is_available: false,
+      sort_order: (maxRow?.sort_order ?? -1) + 1,
+    })
+    .select()
+    .single();
 
   if (error) return { error: error.message };
   revalidatePath("/dashboard");

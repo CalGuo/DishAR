@@ -11,6 +11,16 @@ import {
 } from "@/lib/storage";
 import { createDish, updateDish } from "@/lib/actions/dish";
 
+export const DIETARY_TAGS = [
+  "Vegetarian",
+  "Vegan",
+  "Gluten-free",
+  "Dairy-free",
+  "Halal",
+  "Spicy",
+  "Contains nuts",
+] as const;
+
 export type DishRow = {
   id: string;
   name: string;
@@ -22,6 +32,7 @@ export type DishRow = {
   model_usdz_url: string | null;
   is_available: boolean;
   sort_order: number;
+  tags: string[];
 };
 
 type Props = {
@@ -66,6 +77,13 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
+
+  function toggleTag(tag: string) {
+    setTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -123,6 +141,7 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
         thumbnail_url,
         model_glb_url: model_glb_url!,
         model_usdz_url,
+        tags,
       };
 
       const result = initial
@@ -185,6 +204,31 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
           placeholder="e.g. Starters, Mains, Desserts"
           className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
         />
+      </div>
+      <div className="md:col-span-2">
+        <span className="mb-1 block text-sm font-medium">
+          Dietary &amp; allergen tags{" "}
+          <span className="text-zinc-400">(optional)</span>
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {DIETARY_TAGS.map((tag) => {
+            const active = tags.includes(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                  active
+                    ? "border-zinc-900 bg-zinc-900 text-white"
+                    : "border-zinc-300 hover:bg-zinc-50"
+                }`}
+              >
+                {tag}
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div className="md:col-span-2">
         <label htmlFor="description" className="mb-1 block text-sm font-medium">

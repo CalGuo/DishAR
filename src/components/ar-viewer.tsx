@@ -22,17 +22,39 @@ export type ARViewerProps = {
   className?: string;
 };
 
+type LoadStatus = "loading" | "loaded" | "error";
+type ArStatus =
+  | "not-presenting"
+  | "session-starting"
+  | "object-placing"
+  | "object-placed"
+  | "failed"
+  | null;
+
+function formatSize(dims: { x: number; y: number; z: number }): string {
+  const sorted = [dims.x, dims.y, dims.z].sort((a, b) => b - a);
+  const largest = Math.max(1, Math.round(sorted[0] * 100));
+  const second = Math.max(1, Math.round(sorted[1] * 100));
+  return `≈ ${largest} × ${second} cm`;
+}
+
 export function ARViewer({ src, iosSrc, alt, className }: ARViewerProps) {
   const ref = useRef<ModelViewerElement>(null);
-  const [ready, setReady] = useState(false);
-  const [status, setStatus] = useState<"loading" | "loaded" | "error">(
-    "loading"
-  );
+  const [libReady, setLibReady] = useState(false);
+  const [loadStatus, setLoadStatus] = useState<LoadStatus>("loading");
+  const [retryKey, setRetryKey] = useState(0);
+  const [dimensions, setDimensions] = useState<{
+    x: number;
+    y: number;
+    z: number;
+  } | null>(null);
+  const [arSupported, setArSupported] = useState<boolean | null>(null);
+  const [arStatus, setArStatus] = useState<ArStatus>(null);
 
   useEffect(() => {
     let cancelled = false;
     import("@google/model-viewer").then(() => {
-      if (!cancelled) setReady(true);
+      if (!cancelled) setLibReady(true);
     });
     return () => {
       cancelled = true;
@@ -40,7 +62,7 @@ export function ARViewer({ src, iosSrc, alt, className }: ARViewerProps) {
   }, []);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!libReady) return;
     const el = ref.current;
     if (!el) return;
 
@@ -63,38 +85,60 @@ export function ARViewer({ src, iosSrc, alt, className }: ARViewerProps) {
       el.removeAttribute("ios-src");
     }
 
-    setStatus("loading");
+    setLoadStatus("loading");
+    setDimensions(null);
+    setArStatus(null);
 
-    const onLoad = () => setStatus("loaded");
-    const onError = () => setStatus("error");
+    const onLoad = () => {
+      setLoadStatus("loaded");
+      try {
+        const dims = el.getDimensions();
+        if (dims && typeof dims.x === "number") {
+          setDimensions({ x: dims.x, y: dims.y, z: dims.z });
+        }
+      } catch {
+        // Older/malformed GLBs may not expose dimensions; skip the chip.
+      }
+      setArSupported(el.canActivateAR ?? false);
+    };
+    const onError = () => setLoadStatus("error");
     el.addEventListener("load", onLoad);
     el.addEventListener("error", onError);
+
+    const observer = new MutationObserver(() => {
+      setArStatus((el.getAttribute("ar-status") as ArStatus) ?? null);
+    });
+    observer.observe(el, { attributes: true, attributeFilter: ["ar-status"] });
 
     return () => {
       el.removeEventListener("load", onLoad);
       el.removeEventListener("error", onError);
+      observer.disconnect();
     };
-  }, [ready, src, iosSrc, alt]);
+  }, [libReady, src, iosSrc, alt, retryKey]);
 
   function handleRetry() {
     const el = ref.current;
     if (!el) return;
     el.removeAttribute("src");
-    requestAnimationFrame(() => {
-      el.setAttribute("src", src);
-    });
-    setStatus("loading");
+    setRetryKey((k) => k + 1);
   }
+
+  const placing = arStatus === "object-placing";
+  const failed = arStatus === "failed";
+  const showArHint = arSupported !== false;
+  const showDimensionChip =
+    loadStatus === "loaded" && dimensions !== null && !placing && !failed;
 
   return (
     <div className={`relative ${className ?? ""}`}>
       <model-viewer ref={ref} />
-      {status === "loading" && (
+      {loadStatus === "loading" && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900" />
         </div>
       )}
-      {status === "error" && (
+      {loadStatus === "error" && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/90 p-4 text-center">
           <p className="text-sm font-medium text-zinc-900">
             Couldn&apos;t load this 3D model.
@@ -109,6 +153,32 @@ export function ARViewer({ src, iosSrc, alt, className }: ARViewerProps) {
           >
             Try again
           </button>
+        </div>
+      )}
+
+      {loadStatus === "loaded" && arSupported === false && (
+        <div className="absolute inset-x-0 bottom-0 z-10 bg-zinc-900/80 px-4 py-2 text-center text-xs text-white backdrop-blur">
+          True-to-scale AR works best on a phone with ARCore or ARKit. The 3D
+          model above is still a good look at the dish.
+        </div>
+      )}
+
+      {loadStatus === "loaded" && showArHint && failed && (
+        <div className="absolute inset-x-0 bottom-0 z-10 bg-red-600/90 px-4 py-2 text-center text-xs font-medium text-white">
+          Couldn&apos;t place the dish. Try again in a well-lit area with a flat
+          surface.
+        </div>
+      )}
+
+      {loadStatus === "loaded" && showArHint && placing && (
+        <div className="absolute inset-x-0 bottom-0 z-10 bg-zinc-900/80 px-4 py-2 text-center text-xs font-medium text-white backdrop-blur">
+          Move your phone slowly to scan the area, then tap to place the dish.
+        </div>
+      )}
+
+      {showDimensionChip && (
+        <div className="absolute right-2 top-2 z-10 rounded-full bg-zinc-900/80 px-3 py-1 text-[11px] font-medium text-white backdrop-blur">
+          {formatSize(dimensions!)}
         </div>
       )}
     </div>

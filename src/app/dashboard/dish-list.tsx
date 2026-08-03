@@ -7,15 +7,18 @@ import {
   deleteDish,
   setDishAvailability,
   moveDish,
+  cloneDish,
 } from "@/lib/actions/dish";
+import { formatPrice } from "@/lib/format";
 import { DishForm, type DishRow } from "@/app/dashboard/dish-form";
 
 type Props = {
   restaurantId: string;
+  currency: string;
   dishes: DishRow[];
 };
 
-export function DishList({ restaurantId, dishes }: Props) {
+export function DishList({ restaurantId, currency, dishes }: Props) {
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +71,7 @@ export function DishList({ restaurantId, dishes }: Props) {
                 )}
               </div>
               <p className="text-sm text-zinc-500">
-                ${dish.price.toFixed(2)}
+                {formatPrice(dish.price, currency)}
                 {dish.category ? ` · ${dish.category}` : ""}
               </p>
             </div>
@@ -112,6 +115,14 @@ export function DishList({ restaurantId, dishes }: Props) {
                 className="rounded border border-zinc-300 px-2 py-1 text-xs"
               >
                 Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => runAction(() => cloneDish(dish.id))}
+                className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                title="Duplicate this dish"
+              >
+                Copy
               </button>
               <button
                 type="button"

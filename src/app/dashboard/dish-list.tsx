@@ -13,12 +13,11 @@ import { formatPrice } from "@/lib/format";
 import { DishForm, type DishRow } from "@/app/dashboard/dish-form";
 
 type Props = {
-  restaurantId: string;
   currency: string;
   dishes: DishRow[];
 };
 
-export function DishList({ restaurantId, currency, dishes }: Props) {
+export function DishList({ currency, dishes }: Props) {
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +38,7 @@ export function DishList({ restaurantId, currency, dishes }: Props) {
 
   return (
     <div className="space-y-4">
-      <ul className="divide-y overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+      <ul className="divide-y overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-800 shadow-sm">
         {dishes.map((dish, i) => (
           <li key={dish.id} className="flex items-center gap-4 p-4">
             {dish.thumbnail_url ? (
@@ -59,18 +58,18 @@ export function DishList({ restaurantId, currency, dishes }: Props) {
               <div className="flex items-center gap-2">
                 <h3
                   className={`truncate font-medium ${
-                    dish.is_available ? "" : "text-zinc-400 line-through"
+                    dish.is_available ? "text-white" : "text-zinc-400 line-through"
                   }`}
                 >
                   {dish.name}
                 </h3>
                 {!dish.is_available && (
-                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500">
+                  <span className="rounded-full bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300">
                     Hidden
                   </span>
                 )}
               </div>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-zinc-300">
                 {formatPrice(dish.price, currency)}
                 {dish.category ? ` · ${dish.category}` : ""}
               </p>
@@ -82,7 +81,7 @@ export function DishList({ restaurantId, currency, dishes }: Props) {
                 onClick={() =>
                   runAction(() => moveDish(dish.id, "up"))
                 }
-                className="rounded border border-zinc-300 px-2 py-1 text-xs disabled:opacity-30"
+                className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-900 disabled:opacity-30"
                 title="Move up"
               >
                 ↑
@@ -93,7 +92,7 @@ export function DishList({ restaurantId, currency, dishes }: Props) {
                 onClick={() =>
                   runAction(() => moveDish(dish.id, "down"))
                 }
-                className="rounded border border-zinc-300 px-2 py-1 text-xs disabled:opacity-30"
+                className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-900 disabled:opacity-30"
                 title="Move down"
               >
                 ↓
@@ -105,21 +104,21 @@ export function DishList({ restaurantId, currency, dishes }: Props) {
                     setDishAvailability(dish.id, !dish.is_available)
                   )
                 }
-                className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-900"
               >
                 {dish.is_available ? "Hide" : "Show"}
               </button>
               <button
                 type="button"
                 onClick={() => setEditingId(dish.id)}
-                className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-900"
               >
                 Edit
               </button>
               <button
                 type="button"
                 onClick={() => runAction(() => cloneDish(dish.id))}
-                className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-900"
                 title="Duplicate this dish"
               >
                 Copy
@@ -133,7 +132,7 @@ export function DishList({ restaurantId, currency, dishes }: Props) {
                     runAction(() => deleteDish(dish.id));
                   }
                 }}
-                className="rounded border border-red-300 px-2 py-1 text-xs text-red-600"
+                className="rounded border border-red-300 bg-white px-2 py-1 text-xs text-red-600"
               >
                 Delete
               </button>
@@ -143,19 +142,18 @@ export function DishList({ restaurantId, currency, dishes }: Props) {
       </ul>
       {error && <p className="text-sm text-red-600">{error}</p>}
       {editingId && editingDish && (
-        <div className="rounded-2xl border-2 border-zinc-900 bg-zinc-50 p-4">
+        <div className="rounded-2xl border-2 border-zinc-600 bg-zinc-800 p-4">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-semibold">Edit {editingDish.name}</h2>
+            <h2 className="font-semibold text-white">Edit {editingDish.name}</h2>
             <button
               type="button"
               onClick={() => setEditingId(null)}
-              className="rounded border border-zinc-300 px-3 py-1 text-xs"
+              className="rounded border border-zinc-300 bg-white px-3 py-1 text-xs text-zinc-900"
             >
               Close
             </button>
           </div>
           <DishForm
-            restaurantId={restaurantId}
             initial={editingDish}
             onDone={() => setEditingId(null)}
           />

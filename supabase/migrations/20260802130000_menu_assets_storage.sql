@@ -52,15 +52,7 @@ values ('menu-assets', 'menu-assets', true)
 on conflict (id) do nothing;
 
 -- ----------------------------------------------------------------------------
--- 2. Enable RLS on storage.objects.
---    (storage.buckets RLS is already enabled by default in Supabase; we leave
---    it untouched. We do NOT force RLS here — the standard Supabase storage
---    convention is plain `enable row level security` on storage.objects.)
--- ----------------------------------------------------------------------------
-alter table storage.objects enable row level security;
-
--- ----------------------------------------------------------------------------
--- 3. Policies on storage.objects for the 'menu-assets' bucket only.
+-- 2. Policies on storage.objects for the 'menu-assets' bucket only.
 --
 -- Ownership check used by INSERT / UPDATE / DELETE:
 --   storage.foldername(name) splits the object path into a 1-indexed array of

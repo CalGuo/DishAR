@@ -33,7 +33,8 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
+    <div className="flex min-h-screen items-center justify-center">
+      <form onSubmit={handleSubmit} className="mx-auto w-full max-w-sm space-y-4">
       <div>
         <label htmlFor="email" className="mb-1 block text-sm font-medium">
           Email
@@ -72,10 +73,11 @@ export function RegisterForm() {
       </button>
       <p className="text-center text-sm text-zinc-500">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-zinc-900 underline">
+        <Link href="/login" className="font-medium text-zinc-500 underline hover:text-zinc-700">
           Sign in
         </Link>
       </p>
     </form>
+    </div>
   );
 }

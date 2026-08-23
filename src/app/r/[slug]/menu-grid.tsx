@@ -251,7 +251,7 @@ export function MenuGrid({ slug, restaurant, dishes }: Props) {
                 </div>
               )}
               <div className="p-3">
-                <h2 className="truncate font-medium">{dish.name}</h2>
+                <h2 className="truncate font-medium text-zinc-900">{dish.name}</h2>
                 <p className="mt-0.5 text-sm text-zinc-500">
                   {formatPrice(dish.price, restaurant.currency)}
                 </p>

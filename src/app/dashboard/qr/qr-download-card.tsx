@@ -131,7 +131,7 @@ export function QrDownloadCard({
         type="button"
         onClick={downloadSvg}
         disabled={busy !== null}
-        className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium hover:bg-zinc-50 disabled:opacity-50"
+        className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
       >
         {busy === "svg" ? "Generating…" : "Download SVG (print-ready)"}
       </button>

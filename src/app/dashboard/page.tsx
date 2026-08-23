@@ -86,20 +86,20 @@ export default async function DashboardPage() {
           <SampleDishesButton className="hidden sm:block" />
           <Link
             href="/dashboard/settings"
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+            className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
           >
             Settings
           </Link>
           <Link
             href="/dashboard/qr"
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+            className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
           >
             View QR
           </Link>
           <form action={signOut}>
             <button
               type="submit"
-              className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
             >
               Sign out
             </button>
@@ -108,21 +108,21 @@ export default async function DashboardPage() {
       </div>
 
       <div className="space-y-6">
-        <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">Menu activity</h2>
+        <section className="rounded-2xl border border-zinc-700 bg-zinc-800 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-white">Menu activity</h2>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:max-w-md">
-            <div className="rounded-xl bg-zinc-50 p-4">
-              <p className="text-2xl font-semibold">{scanCount ?? 0}</p>
-              <p className="text-sm text-zinc-500">Menu scans</p>
+            <div className="rounded-xl bg-zinc-700 p-4">
+              <p className="text-2xl font-semibold text-white">{scanCount ?? 0}</p>
+              <p className="text-sm text-zinc-300">Menu scans</p>
             </div>
-            <div className="rounded-xl bg-zinc-50 p-4">
-              <p className="text-2xl font-semibold">{viewCount ?? 0}</p>
-              <p className="text-sm text-zinc-500">Dish views</p>
+            <div className="rounded-xl bg-zinc-700 p-4">
+              <p className="text-2xl font-semibold text-white">{viewCount ?? 0}</p>
+              <p className="text-sm text-zinc-300">Dish views</p>
             </div>
           </div>
           {topDishes.length > 0 && (
             <div className="mt-5">
-              <p className="text-sm font-medium text-zinc-700">
+              <p className="text-sm font-medium text-zinc-300">
                 Most viewed dishes
               </p>
               <ol className="mt-2 space-y-1">
@@ -131,8 +131,8 @@ export default async function DashboardPage() {
                     key={d.id}
                     className="flex items-center justify-between text-sm"
                   >
-                    <span className="truncate text-zinc-700">{d.name}</span>
-                    <span className="ml-3 shrink-0 text-zinc-500">
+                    <span className="truncate text-zinc-200">{d.name}</span>
+                    <span className="ml-3 shrink-0 text-zinc-400">
                       {d.count} view{d.count === 1 ? "" : "s"}
                     </span>
                   </li>
@@ -146,16 +146,15 @@ export default async function DashboardPage() {
           </p>
         </section>
 
-        <DishForm restaurantId={restaurant.id} />
+        <DishForm />
         {dishes && dishes.length > 0 ? (
           <DishList
-            restaurantId={restaurant.id}
             currency={restaurant.currency}
             dishes={dishes}
           />
         ) : (
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-center">
-            <p className="text-sm text-zinc-600">
+          <div className="rounded-2xl border border-zinc-700 bg-zinc-800 p-6 text-center">
+            <p className="text-sm text-zinc-300">
               No dishes yet. Add your first one above, or seed sample dishes to
               see the AR menu instantly.
             </p>

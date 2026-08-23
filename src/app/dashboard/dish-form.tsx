@@ -2,13 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import {
-  MENU_BUCKET,
-  isValidImage,
-  isValidModel,
-  extensionForFileName,
-} from "@/lib/storage";
+import { isValidImage, isValidModel } from "@/lib/storage";
+import { uploadMenuAsset } from "@/lib/actions/assets";
 import { createDish, updateDish } from "@/lib/actions/dish";
 import { ARViewer } from "@/components/ar-viewer";
 
@@ -37,13 +32,11 @@ export type DishRow = {
 };
 
 type Props = {
-  restaurantId: string;
   initial?: DishRow;
   onDone?: () => void;
 };
 
 async function uploadFile(
-  restaurantId: string,
   folder: "images" | "models",
   file: File
 ): Promise<{ url?: string; error?: string }> {
@@ -61,17 +54,9 @@ async function uploadFile(
     }
   }
 
-  const supabase = createClient();
-  const path = `restaurants/${restaurantId}/${folder}/${crypto.randomUUID()}.${extensionForFileName(file.name, file.type)}`;
-
-  const { error } = await supabase.storage
-    .from(MENU_BUCKET)
-    .upload(path, file, { cacheControl: "3600", upsert: false });
-
-  if (error) return { error: error.message };
-
-  const { data } = supabase.storage.from(MENU_BUCKET).getPublicUrl(path);
-  return { url: data.publicUrl };
+  const formData = new FormData();
+  formData.set("file", file);
+  return uploadMenuAsset(folder, formData);
 }
 
 function dataUrlToFile(dataUrl: string, fileName: string): File {
@@ -93,7 +78,7 @@ function formatModelSize(
   return `≈ ${Math.max(1, Math.round(sorted[0] * 100))} × ${Math.max(1, Math.round(sorted[1] * 100))} cm`;
 }
 
-export function DishForm({ restaurantId, initial, onDone }: Props) {
+export function DishForm({ initial, onDone }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -117,7 +102,8 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       if (!file) return null;
-      return URL.createObjectURL(file);
+      const blob = new Blob([file], { type: "model/gltf-binary" });
+      return URL.createObjectURL(blob);
     });
     setModelDims(null);
     setAutoThumb(null);
@@ -158,31 +144,30 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
     try {
       let thumbnail_url = initial?.thumbnail_url ?? null;
       if (thumbnail && thumbnail.size > 0) {
-        const res = await uploadFile(restaurantId, "images", thumbnail);
-        if (res.error) throw { message: res.error };
+        const res = await uploadFile("images", thumbnail);
+        if (res.error) throw new Error(res.error);
         thumbnail_url = res.url!;
       } else if (autoThumb) {
         // No photo supplied — auto-generate one from the selected GLB render.
         const res = await uploadFile(
-          restaurantId,
           "images",
           dataUrlToFile(autoThumb, `auto-thumb-${Date.now()}.png`)
         );
-        if (res.error) throw { message: res.error };
+        if (res.error) throw new Error(res.error);
         thumbnail_url = res.url!;
       }
 
       let model_glb_url = initial?.model_glb_url ?? null;
       if (glb && glb.size > 0) {
-        const res = await uploadFile(restaurantId, "models", glb);
-        if (res.error) throw { message: res.error };
+        const res = await uploadFile("models", glb);
+        if (res.error) throw new Error(res.error);
         model_glb_url = res.url!;
       }
 
       let model_usdz_url = initial?.model_usdz_url ?? null;
       if (usdz && usdz.size > 0) {
-        const res = await uploadFile(restaurantId, "models", usdz);
-        if (res.error) throw { message: res.error };
+        const res = await uploadFile("models", usdz);
+        if (res.error) throw new Error(res.error);
         model_usdz_url = res.url!;
       }
 
@@ -215,10 +200,10 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm md:grid-cols-2"
+      className="grid gap-4 rounded-2xl border border-zinc-700 bg-zinc-800 p-6 shadow-sm md:grid-cols-2"
     >
       <div>
-        <label htmlFor="name" className="mb-1 block text-sm font-medium">
+        <label htmlFor="name" className="mb-1 block text-sm font-medium text-zinc-200">
           Name
         </label>
         <input
@@ -227,11 +212,11 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
           type="text"
           required
           defaultValue={initial?.name ?? ""}
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
         />
       </div>
       <div>
-        <label htmlFor="price" className="mb-1 block text-sm font-medium">
+        <label htmlFor="price" className="mb-1 block text-sm font-medium text-zinc-200">
           Price
         </label>
         <input
@@ -242,11 +227,11 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
           min="0"
           required
           defaultValue={initial?.price ?? ""}
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
         />
       </div>
       <div>
-        <label htmlFor="category" className="mb-1 block text-sm font-medium">
+        <label htmlFor="category" className="mb-1 block text-sm font-medium text-zinc-200">
           Category
         </label>
         <input
@@ -255,11 +240,11 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
           type="text"
           defaultValue={initial?.category ?? ""}
           placeholder="e.g. Starters, Mains, Desserts"
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
         />
       </div>
       <div className="md:col-span-2">
-        <span className="mb-1 block text-sm font-medium">
+        <span className="mb-1 block text-sm font-medium text-zinc-200">
           Dietary &amp; allergen tags{" "}
           <span className="text-zinc-400">(optional)</span>
         </span>
@@ -284,7 +269,7 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
         </div>
       </div>
       <div className="md:col-span-2">
-        <label htmlFor="description" className="mb-1 block text-sm font-medium">
+        <label htmlFor="description" className="mb-1 block text-sm font-medium text-zinc-200">
           Description
         </label>
         <textarea
@@ -292,11 +277,11 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
           name="description"
           rows={3}
           defaultValue={initial?.description ?? ""}
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
         />
       </div>
       <div>
-        <label htmlFor="thumbnail" className="mb-1 block text-sm font-medium">
+        <label htmlFor="thumbnail" className="mb-1 block text-sm font-medium text-zinc-200">
           Thumbnail image <span className="text-zinc-400">(optional)</span>
         </label>
         <input
@@ -308,7 +293,7 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
         />
       </div>
       <div>
-        <label htmlFor="model_glb" className="mb-1 block text-sm font-medium">
+        <label htmlFor="model_glb" className="mb-1 block text-sm font-medium text-zinc-200">
           3D model (GLB) <span className="text-red-500">*</span>
         </label>
         <input
@@ -327,7 +312,7 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
       </div>
       {previewUrl && (
         <div className="md:col-span-2">
-          <span className="mb-1 block text-sm font-medium">
+          <span className="mb-1 block text-sm font-medium text-zinc-200">
             Model preview
           </span>
           <div className="h-56 w-full overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
@@ -358,7 +343,7 @@ export function DishForm({ restaurantId, initial, onDone }: Props) {
         </div>
       )}
       <div>
-        <label htmlFor="model_usdz" className="mb-1 block text-sm font-medium">
+        <label htmlFor="model_usdz" className="mb-1 block text-sm font-medium text-zinc-200">
           iOS model (USDZ){" "}
           <span className="text-zinc-400">(optional)</span>
         </label>

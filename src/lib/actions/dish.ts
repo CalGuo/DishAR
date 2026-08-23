@@ -23,8 +23,10 @@ type DishFields = {
   tags: string[];
 };
 
-async function resolveRestaurantId(userId: string): Promise<string | null> {
-  const supabase = await createClient();
+async function resolveRestaurantId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string
+): Promise<string | null> {
   const { data } = await supabase
     .from("restaurants")
     .select("id")
@@ -34,13 +36,13 @@ async function resolveRestaurantId(userId: string): Promise<string | null> {
 }
 
 async function assertOwnsDish(
+  supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   dishId: string
 ): Promise<{ restaurantId: string } | { error: string }> {
-  const restaurantId = await resolveRestaurantId(userId);
+  const restaurantId = await resolveRestaurantId(supabase, userId);
   if (!restaurantId) return { error: "No restaurant for this account." };
 
-  const supabase = await createClient();
   const { data } = await supabase
     .from("dishes")
     .select("id")
@@ -63,10 +65,11 @@ export async function createDish(
     return { error: "Dish name and a GLB model are required." };
   }
 
-  const ownerId = await resolveRestaurantId(user.id);
+  const supabase = await createClient();
+
+  const ownerId = await resolveRestaurantId(supabase, user.id);
   if (!ownerId) return { error: "Create your restaurant first." };
 
-  const supabase = await createClient();
   const { data: maxRow } = await supabase
     .from("dishes")
     .select("sort_order")
@@ -108,10 +111,10 @@ export async function updateDish(
     return { error: "Dish name and a GLB model are required." };
   }
 
-  const owned = await assertOwnsDish(user.id, dishId);
+  const supabase = await createClient();
+  const owned = await assertOwnsDish(supabase, user.id, dishId);
   if ("error" in owned) return owned;
 
-  const supabase = await createClient();
   const { error } = await supabase
     .from("dishes")
     .update({
@@ -138,10 +141,9 @@ export async function deleteDish(
   const user = await getCurrentUser();
   if (!user) return { error: "You must be signed in." };
 
-  const owned = await assertOwnsDish(user.id, dishId);
-  if ("error" in owned) return owned;
-
   const supabase = await createClient();
+  const owned = await assertOwnsDish(supabase, user.id, dishId);
+  if ("error" in owned) return owned;
 
   const { data: dish } = await supabase
     .from("dishes")
@@ -181,10 +183,10 @@ export async function setDishAvailability(
   const user = await getCurrentUser();
   if (!user) return { error: "You must be signed in." };
 
-  const owned = await assertOwnsDish(user.id, dishId);
+  const supabase = await createClient();
+  const owned = await assertOwnsDish(supabase, user.id, dishId);
   if ("error" in owned) return owned;
 
-  const supabase = await createClient();
   const { error } = await supabase
     .from("dishes")
     .update({ is_available: isAvailable })
@@ -202,10 +204,9 @@ export async function cloneDish(
   const user = await getCurrentUser();
   if (!user) return { error: "You must be signed in." };
 
-  const owned = await assertOwnsDish(user.id, dishId);
-  if ("error" in owned) return owned;
-
   const supabase = await createClient();
+  const owned = await assertOwnsDish(supabase, user.id, dishId);
+  if ("error" in owned) return owned;
 
   const { data: source } = await supabase
     .from("dishes")
@@ -255,10 +256,9 @@ export async function moveDish(
   const user = await getCurrentUser();
   if (!user) return { error: "You must be signed in." };
 
-  const owned = await assertOwnsDish(user.id, dishId);
-  if ("error" in owned) return owned;
-
   const supabase = await createClient();
+  const owned = await assertOwnsDish(supabase, user.id, dishId);
+  if ("error" in owned) return owned;
   const { data: dishes } = await supabase
     .from("dishes")
     .select("id, sort_order")

@@ -13,7 +13,7 @@
 --   names ending in .glb / .gltf / .usdz / .png / .jpg / .jpeg / .webp.
 --   All other names raise an exception (any role).
 -- ============================================================================
-create or replace function storage.check_menu_asset_extension()
+create or replace function public.check_menu_asset_extension()
 returns trigger
 language plpgsql
 security definer
@@ -43,4 +43,4 @@ drop trigger if exists check_menu_asset_extension on storage.objects;
 create trigger check_menu_asset_extension
   before insert or update on storage.objects
   for each row
-  execute function storage.check_menu_asset_extension();
+  execute function public.check_menu_asset_extension();

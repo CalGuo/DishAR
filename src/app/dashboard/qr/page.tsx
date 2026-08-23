@@ -37,7 +37,7 @@ export default async function DashboardQrPage() {
     <div className="mx-auto max-w-3xl px-6 py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{restaurant.name} — QR code</h1>
+          <h1 className="text-2xl font-semibold">QR code</h1>
           <p className="text-sm text-zinc-500">
             Print this and put it at every table.
           </p>
@@ -45,14 +45,14 @@ export default async function DashboardQrPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/dashboard"
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+            className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
           >
             Back to dishes
           </Link>
           <form action={signOut}>
             <button
               type="submit"
-              className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
             >
               Sign out
             </button>
@@ -85,7 +85,7 @@ export default async function DashboardQrPage() {
         />
         <Link
           href={menuUrl}
-          className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium hover:bg-zinc-50"
+            className="rounded-lg border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
         >
           Open public menu
         </Link>

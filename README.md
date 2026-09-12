@@ -16,13 +16,13 @@ A multi-tenant web application for restaurants. Upload 3D-scanned dish models (G
 
 ## Features
 
-- **Browser-based AR** — Uses [`<model-viewer>`](https://modelviewer.dev) to render GLB/USDZ models via WebXR (Chrome/Android), Scene Viewer (Android), and Quick Look (iOS)
-- **No app install** — Customers scan a QR code and view dishes in AR instantly
-- **Multi-tenant** — Each restaurant owner gets isolated data with strict Row Level Security (RLS)
-- **Dashboard** — Manage dishes, reorder, toggle availability, and view analytics
-- **QR code generation** — Download printable QR codes for each table
-- **Procedural 3D models** — Built-in demo model generator for testing without pre-scanned assets
-- **Analytics** — Track menu scans and dish views per restaurant
+- **Browser-based AR**: Uses [`<model-viewer>`](https://modelviewer.dev) to render GLB/USDZ models via WebXR (Chrome/Android), Scene Viewer (Android), and Quick Look (iOS)
+- **No app install**: Customers scan a QR code and view dishes in AR instantly
+- **Multi-tenant**: Each restaurant owner gets isolated data with strict Row Level Security (RLS)
+- **Dashboard**: Manage dishes, reorder, toggle availability, and view analytics
+- **QR code generation**: Download printable QR codes for each table
+- **Procedural 3D models**: Built-in demo model generator for testing without pre-scanned assets
+- **Analytics**: Track menu scans and dish views per restaurant
 
 ## Tech Stack
 
@@ -84,7 +84,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ### Restaurant Owners
 
 1. **Sign up** and create a restaurant with a unique URL slug
-2. **Upload dishes** — name, price, category, thumbnail image, and a GLB 3D model (USDZ optional for iOS support)
+2. **Upload dishes**: name, price, category, thumbnail image, and a GLB 3D model (USDZ optional for iOS support)
 3. **Manage** from the dashboard — reorder, show/hide, edit, or delete dishes
 4. **Download a QR code** pointing to your public menu at `/r/<slug>`
 
@@ -131,8 +131,8 @@ supabase/
 
 ## Security
 
-- **RLS** on all tables — restaurant owners can only access their own data
-- **4 Supabase client variants** — server (cookie auth), client (browser), public (read-only), admin (service role)
-- **Middleware** enforces route guards — protected routes redirect to login; auth routes redirect to dashboard
+- **RLS** on all tables: restaurant owners can only access their own data
+- **4 Supabase client variants**: server (cookie auth), client (browser), public (read-only), admin (service role)
+- **Middleware** enforces route guards: protected routes redirect to login; auth routes redirect to dashboard
 - **Storage policies** enforce path-based ownership under `restaurants/<id>/`
 - **Content policy trigger** rejects uploads with disallowed file extensions

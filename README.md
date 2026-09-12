@@ -85,7 +85,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 1. **Sign up** and create a restaurant with a unique URL slug
 2. **Upload dishes**: name, price, category, thumbnail image, and a GLB 3D model (USDZ optional for iOS support)
-3. **Manage** from the dashboard — reorder, show/hide, edit, or delete dishes
+3. **Manage** from the dashboard: reorder, show/hide, edit, or delete dishes
 4. **Download a QR code** pointing to your public menu at `/r/<slug>`
 
 ### Customers
